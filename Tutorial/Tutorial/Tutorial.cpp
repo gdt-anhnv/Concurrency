@@ -3,19 +3,67 @@
 
 #include "pch.h"
 #include <iostream>
+#include <thread>
+#include <list>
+#include <mutex>
+#include <algorithm>
+#include <random>
+#include <ctime>
+#include <chrono>
+
+auto data = std::list<int>();
+std::mutex mutex;
+
+int random()
+{
+	std::srand(std::time(nullptr));
+	return std::rand() % 1000;
+}
+
+void AddData()
+{
+	while (true)
+	{
+		std::lock_guard<std::mutex> guard(mutex);
+		std::this_thread::sleep_for(std::chrono::microseconds(random()));
+		data.push_back(random());
+	}
+}
+
+void RemoveData()
+{
+	while (true)
+	{
+		std::lock_guard<std::mutex> guard(mutex);
+		if (data.size() > 0)
+		{
+			std::this_thread::sleep_for(std::chrono::microseconds(random()));
+			data.pop_back();
+		}
+	}
+}
+
+struct ThreadObj
+{
+	std::thread& thread;
+	ThreadObj(std::thread& t) : thread(t) {}
+	~ThreadObj()
+	{
+		if (thread.joinable())
+			thread.join();
+	}
+
+	ThreadObj(const ThreadObj&) = delete;
+	ThreadObj& operator=(const ThreadObj&) = delete;
+};
 
 int main()
 {
-    std::cout << "Hello World!\n"; 
+	auto t1 = std::thread(AddData);
+	auto t2 = std::thread(RemoveData);
+	auto t3 = std::thread(RemoveData);
+	ThreadObj to1(t1);
+	ThreadObj to2(t2);
+	ThreadObj to3(t3);
+	return 0;
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
