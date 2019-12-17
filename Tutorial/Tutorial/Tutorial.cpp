@@ -2,6 +2,11 @@
 //
 
 #include "pch.h"
+
+#include "common.h"
+#include "unique_lock_tut.h"
+#include "cond_var_tut.h"
+
 #include <iostream>
 #include <thread>
 #include <list>
@@ -13,12 +18,6 @@
 
 auto data = std::list<int>();
 std::mutex mutex;
-
-int random()
-{
-	std::srand(std::time(nullptr));
-	return std::rand() % 1000;
-}
 
 void AddData()
 {
@@ -57,7 +56,7 @@ struct ThreadObj
 	ThreadObj& operator=(const ThreadObj&) = delete;
 };
 
-int main()
+int main_1()
 {
 	auto t1 = std::thread(AddData);
 	auto t2 = std::thread(RemoveData);
@@ -65,5 +64,37 @@ int main()
 	ThreadObj to1(t1);
 	ThreadObj to2(t2);
 	ThreadObj to3(t3);
+	return 0;
+}
+
+int main_2()
+{
+	Data data{};
+	std::thread t1(std::bind(LockData, std::ref(data)));
+	std::thread t2(std::bind(LockData, std::ref(data)));
+	std::thread t3(std::bind(LockData, std::ref(data)));
+	ThreadObj to1(t1);
+	ThreadObj to2(t2);
+	ThreadObj to3(t3);
+
+	std::thread report(std::bind(ReportData, std::ref(data)));
+	ThreadObj to4(report);
+	return 0;
+}
+
+int main()
+{
+	DataCV data{};
+	std::thread t1(std::bind(&DataCV::AddData, std::ref(data)));
+	std::thread t2(std::bind(&DataCV::AddData, std::ref(data)));
+
+	std::thread t3(std::bind(&DataCV::Process, std::ref(data)));
+	std::thread t4(std::bind(&DataCV::Process, std::ref(data)));
+
+	ThreadObj to1(t1);
+	ThreadObj to2(t2);
+	ThreadObj to3(t3);
+	ThreadObj to4(t4);
+
 	return 0;
 }
